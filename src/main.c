@@ -9,10 +9,38 @@
 #include <driver/timer.h>
 
 //Length of the filter
-#define M 3
+#define M 4
+#define N 4
 
 //The sampling freq to be used 
 int freq = 10000;
+
+static float xbuff[M+1]={0};
+static float b[M+1] = {
+                            0.01488697472657, 
+                            -0.02695899404537,  
+                            0.03705935223574, 
+                            -0.02695899404537,
+                            0.01488697472657    };
+//static float b[M+1] = {
+//    0.01080096024942, 0.009150882313605, 0.007511904549456,0.0005792030769843,
+//   -0.01127376170725, -0.02515190942132, -0.03590095692545, -0.03739762488425,
+//   -0.02453046490484,  0.00471963858602,  0.04788555515624,  0.09797523269544,
+//     0.1449637668957,   0.1784338566514,   0.1905580972352,   0.1784338566514,
+//     0.1449637668957,  0.09797523269544,  0.04788555515624,  0.00471963858602,
+//   -0.02453046490484, -0.03739762488425, -0.03590095692545, -0.02515190942132,
+//   -0.01127376170725,0.0005792030769843, 0.007511904549456, 0.009150882313605,
+//    0.01080096024942
+// };
+
+
+static float ybuff[N+1]={0};
+static float a[N+1]={
+                            -1,   
+                            3.338693232847,    
+                            -4.401916486793,   
+                            2.691625646031,
+                            -0.6428936122854    };
 
 
 //Callback for how often you sample.
@@ -20,12 +48,10 @@ static void periodic_timer_callback(void *arg)
 {
     gpio_set_level(GPIO_NUM_27,1);
 
-    //original
     float val = adc1_get_raw(ADC1_CHANNEL_6);
     val = val / 16;
 
-
-    ///////// tillagd, lab 2 ///////// 
+    ///////// lab 2 ///////// 
     //static uint16_t buffer[10000]={0};
     //static uint32_t k=0;
     //buffer[k]=val;
@@ -34,14 +60,11 @@ static void periodic_timer_callback(void *arg)
     //float outvalue = buffer[k]+val;
     //////////////////////////// 
 
+    /////////////-FIR-/////////////// 
     static uint32_t k=0;
     float outvalue; 
-
-    ///////// tillagd, lab 3 ///////// 
-    static float xbuff[M+1]={0};
-    static float b[M+1]={0.2500, 0.2500, 0.2500, 0.2500};
-
     float sum = 0;
+
 
     // make room for new input value
     for (k = M; k > 0; k--) {
@@ -55,8 +78,31 @@ static void periodic_timer_callback(void *arg)
     }
 
     // convert and store in outvalue
-    outvalue = (float)sum;
+    // outvalue = (float)sum;
     //////////////////////////// 
+
+
+    /////////////-IIR-/////////////// 
+    //static float a[N+1]={0.9};
+
+    // form filtered output
+    float filtered_sum = 0;
+    for (k = 0; k <= N; k++) {
+        filtered_sum += a[k+1] * ybuff[k+1];
+    }
+    filtered_sum += sum;
+
+    // make room for new output value
+    for (k = N; k > 0; k--) {
+        ybuff[k] = ybuff[k-1];
+    }
+
+    // store new output value
+    ybuff[1] = filtered_sum;
+
+    outvalue = (uint32_t)ybuff[1];
+    ///////////////////////////
+
 
     //original, but with val instead of outvalue.
     dac_output_voltage(DAC_CHANNEL_1, (int)outvalue);
