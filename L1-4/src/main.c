@@ -51,6 +51,8 @@ static void periodic_timer_callback(void *arg)
     float val = adc1_get_raw(ADC1_CHANNEL_6);
     val = val / 16;
 
+    
+
     ///////// lab 2 ///////// 
     //static uint16_t buffer[10000]={0};
     //static uint32_t k=0;
@@ -113,24 +115,15 @@ static void periodic_timer_callback(void *arg)
 
 void app_main()
 {
-    //init adc and dac
-    //adc_power_on();
-    //adc_gpio_init(ADC_UNIT_1, ADC1_GPIO32_CHANNEL);
+
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11);
     gpio_pullup_en(32);
     dac_output_enable(DAC_CHANNEL_1);
 
-    //gpio_config_t config;
-    //config.pin_bit_mask = 1<<GPIO_NUM_27;
-    //config.mode = GPIO_MODE_DEF_OUTPUT;
-    //config.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    //config.pull_up_en = GPIO_PULLUP_ENABLE;
-    //gpio_config(&config);
-
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.mode = GPIO_MODE_INPUT;
     io_conf.pin_bit_mask = (1 << GPIO_NUM_27);
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
